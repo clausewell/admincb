@@ -1,265 +1,307 @@
-<script>
-    const CW_GET_STATUS_URL = 'https://default6bceeacf48244b408c6dfa6e15ddc6.d9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/1301363e02e34cc791d4e75ea400b36d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=iN2sh3VqqQDA4KVwtI6TpV0RXhk2_Y_9jSoIuXSMvWQ';
-    const CW_SEND_MESSAGE_URL = 'https://default6bceeacf48244b408c6dfa6e15ddc6.d9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/aed4ddce5ddf4559a5497db276691a0f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=87e8kgVWhgNLRtVkiU2-YJvdHE6UkX0wPgANY8FZ8_Y';
-    const CW_GET_CHATS_URL = 'https://default6bceeacf48244b408c6dfa6e15ddc6.d9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/2334eb9a0d1d4d2386d56277e107c33a/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=2SGpKNNezwf-U1wiEpNYNU2CQI1ggzJB6k0nZO0YiFo';
+// Power Automate Flow URLs
+const GET_STATUS_URL = 'https://default6bceeacf48244b408c6dfa6e15ddc6.d9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/1301363e02e34cc791d4e75ea400b36d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=iN2sh3VqqQDA4KVwtI6TpV0RXhk2_Y_9jSoIuXSMvWQ';
+const UPDATE_STATUS_URL = 'https://default6bceeacf48244b408c6dfa6e15ddc6.d9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/e51ca044361a45229ab5d339da70ace3/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=IV76u1Y_6fq2vI3NHm7vlvyVpEpz0qpEQbdePTHO9EM';
+const GET_CHATS_URL = 'https://default6bceeacf48244b408c6dfa6e15ddc6.d9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/2334eb9a0d1d4d2386d56277e107c33a/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=2SGpKNNezwf-U1wiEpNYNU2CQI1ggzJB6k0nZO0YiFo';
+const SEND_REPLY_URL = 'https://default6bceeacf48244b408c6dfa6e15ddc6.d9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9251f8b8ab2041a0906322115102a00a/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=sBx5ObDZIS-KFZRJkpfdlv0nBAAO2Fx0eGTNsbX4ARI';
+
+let currentStatus = null;
+let currentChatId = null;
+let chatsRefreshInterval = null;
+
+// Initialize on page load
+window.addEventListener('DOMContentLoaded', () => {
+    checkStatus();
+    loadChats();
     
-    let cwIsLive = false;
-    let cwConversationId = cwGenerateId();
-    let cwUserInfo = null;
-    let cwChatStarted = false;
-    let cwPollingInterval = null;
-    let cwLastMessageCount = 0;
-    
-    function cwGenerateId() {
-        return 'conv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    // Check URL for conversation ID (from email link)
+    const urlParams = new URLSearchParams(window.location.search);
+    const convId = urlParams.get('conv');
+    if (convId) {
+        // Give it a moment to load chats first
+        setTimeout(() => openChatById(convId), 1000);
     }
     
-    async function cwCheckChatStatus() {
-        try {
-            const response = await fetch(CW_GET_STATUS_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ checkStatus: true })
-            });
-            
-            const data = await response.json();
-            cwIsLive = data.isLive;
-            
-            const statusText = document.getElementById('cw-chat-status');
-            if (cwIsLive) {
-                statusText.textContent = '🟢 Brett is available';
-                // Start polling for replies when in live mode
-                if (cwChatStarted && !cwPollingInterval) {
-                    cwStartPolling();
-                }
-            } else {
-                statusText.textContent = '🤖 AI Assistant';
-                // Stop polling in AI mode
-                cwStopPolling();
-            }
-            
-            return cwIsLive;
-        } catch (error) {
-            console.error('Error checking chat status:', error);
-            return false;
-        }
-    }
-    
-    function cwToggleChat() {
-        const chatWindow = document.getElementById('cw-chat-window');
-        chatWindow.classList.toggle('open');
+    // Auto-refresh chats every 5 seconds
+    chatsRefreshInterval = setInterval(loadChats, 5000);
+});
+
+// Status Toggle Functions
+async function checkStatus() {
+    try {
+        const response = await fetch(GET_STATUS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ checkStatus: true })
+        });
         
-        if (chatWindow.classList.contains('open') && !cwChatStarted) {
-            cwCheckChatStatus().then(() => {
-                cwShowContactForm();
-            });
-        } else if (!chatWindow.classList.contains('open')) {
-            // Stop polling when chat is closed
-            cwStopPolling();
+        if (!response.ok) {
+            throw new Error('Failed to fetch status');
         }
+        
+        const data = await response.json();
+        currentStatus = data.isLive;
+        
+        updateStatusUI(data.isLive, data.lastUpdated);
+        
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('statusSection').style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showError('Failed to load status.');
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('statusSection').style.display = 'block';
+    }
+}
+
+function updateStatusUI(isLive, lastUpdated) {
+    const card = document.getElementById('statusCard');
+    const icon = document.getElementById('statusIcon');
+    const text = document.getElementById('statusText');
+    const description = document.getElementById('statusDescription');
+    const updated = document.getElementById('lastUpdated');
+    
+    if (isLive) {
+        card.className = 'status-card live';
+        icon.textContent = '🟢';
+        text.textContent = 'LIVE MODE';
+        description.textContent = 'You are responding to chats';
+    } else {
+        card.className = 'status-card ai';
+        icon.textContent = '🤖';
+        text.textContent = 'AI MODE';
+        description.textContent = 'AI assistant is handling chats';
     }
     
-    function cwShowContactForm() {
-        const messagesDiv = document.getElementById('cw-chat-messages');
+    const date = new Date(lastUpdated);
+    const options = { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric',
+        hour: 'numeric', 
+        minute: '2-digit',
+        timeZone: 'America/Los_Angeles',
+        timeZoneName: 'short'
+    };
+    updated.textContent = `Last updated: ${date.toLocaleString('en-US', options)}`;
+    
+    document.getElementById('error').style.display = 'none';
+}
+
+async function toggleStatus() {
+    const button = document.getElementById('toggleButton');
+    button.disabled = true;
+    button.textContent = 'Switching...';
+    
+    try {
+        const newStatus = !currentStatus;
         
-        const formHTML = `
-            <div class="cw-contact-form">
-                <div class="cw-form-header">
-                    <h4>Let's get started!</h4>
-                    <p>Please share your contact information</p>
+        const response = await fetch(UPDATE_STATUS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ setLive: newStatus })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to update status');
+        }
+        
+        await checkStatus();
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showError('Failed to switch mode.');
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Switch Mode';
+    }
+}
+
+// Chat Functions
+async function loadChats() {
+    try {
+        const response = await fetch(GET_CHATS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ getChats: true })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch chats');
+        }
+        
+        const data = await response.json();
+        displayChats(data.chats);
+        
+    } catch (error) {
+        console.error('Error loading chats:', error);
+    }
+}
+
+function displayChats(chats) {
+    const chatsList = document.getElementById('chatsList');
+    
+    if (!chats || chats.length === 0) {
+        chatsList.innerHTML = '<p class="no-chats">No active chats</p>';
+        return;
+    }
+    
+    chatsList.innerHTML = chats.map(chat => `
+        <div class="chat-item" onclick="openChat('${chat.conversationId}')">
+            <div class="chat-item-info">
+                <h4>${chat.firstName} ${chat.lastName}</h4>
+                <p>${chat.email} • ${chat.phone}</p>
+                <div class="chat-item-preview">"${truncate(chat.lastMessage, 60)}"</div>
+            </div>
+            ${chat.needsReply ? '<span class="chat-item-badge">New</span>' : ''}
+        </div>
+    `).join('');
+}
+
+function truncate(str, length) {
+    return str.length > length ? str.substring(0, length) + '...' : str;
+}
+
+async function openChat(conversationId) {
+    currentChatId = conversationId;
+    
+    // Hide chats list, show chat detail
+    document.getElementById('chatsSection').style.display = 'none';
+    document.getElementById('chatDetail').style.display = 'block';
+    
+    // Load chat messages
+    await loadChatMessages(conversationId);
+    
+    // Stop auto-refreshing chats list while viewing a conversation
+    clearInterval(chatsRefreshInterval);
+    
+    // Start auto-refreshing this conversation
+    chatsRefreshInterval = setInterval(() => loadChatMessages(conversationId), 3000);
+}
+
+function openChatById(convId) {
+    openChat(convId);
+}
+
+async function loadChatMessages(conversationId) {
+    try {
+        const response = await fetch(GET_CHATS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                conversationId: conversationId 
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch messages');
+        }
+        
+        const data = await response.json();
+        displayChatMessages(data);
+        
+    } catch (error) {
+        console.error('Error loading messages:', error);
+    }
+}
+
+function displayChatMessages(data) {
+    const { firstName, lastName, email, phone, messages } = data;
+    
+    // Update header
+    document.getElementById('chatDetailName').textContent = `${firstName} ${lastName}`;
+    document.getElementById('chatDetailContact').textContent = `${email} • ${phone}`;
+    
+    // Display messages
+    const messagesDiv = document.getElementById('chatMessages');
+    messagesDiv.innerHTML = messages.map(msg => {
+        const senderClass = msg.sender === 'user' ? 'user' : (msg.sender === 'brett' ? 'brett' : 'bot');
+        const senderName = msg.sender === 'user' ? firstName : (msg.sender === 'brett' ? 'You' : 'AI Assistant');
+        
+        return `
+            <div class="message ${senderClass}">
+                <div class="message-header">
+                    <span class="message-sender">${senderName}</span>
+                    <span class="message-time">${formatTime(msg.timestamp)}</span>
                 </div>
-                <form id="cw-contact-form" onsubmit="cwSubmitContactForm(event)">
-                    <input type="text" id="cw-firstName" placeholder="First Name*" required>
-                    <input type="text" id="cw-lastName" placeholder="Last Name*" required>
-                    <input type="email" id="cw-email" placeholder="Email*" required>
-                    <input type="tel" id="cw-phone" placeholder="Phone*" required>
-                    <button type="submit" class="cw-form-submit">Start Chat</button>
-                </form>
+                <div class="message-bubble">${msg.text}</div>
             </div>
         `;
-        
-        messagesDiv.innerHTML = formHTML;
-    }
+    }).join('');
     
-    function cwSubmitContactForm(event) {
-        event.preventDefault();
-        
-        cwUserInfo = {
-            firstName: document.getElementById('cw-firstName').value.trim(),
-            lastName: document.getElementById('cw-lastName').value.trim(),
-            email: document.getElementById('cw-email').value.trim(),
-            phone: document.getElementById('cw-phone').value.trim()
-        };
-        
-        cwChatStarted = true;
-        
-        // Clear form and show welcome message
-        document.getElementById('cw-chat-messages').innerHTML = '';
-        cwShowWelcomeMessage();
-        
-        // Start polling if in live mode
-        if (cwIsLive) {
-            cwStartPolling();
-        }
-    }
+    // Scroll to bottom
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        timeZone: 'America/Los_Angeles'
+    });
+}
+
+function closeChatDetail() {
+    currentChatId = null;
     
-    function cwShowWelcomeMessage() {
-        const welcomeMsg = cwIsLive 
-            ? `Hi ${cwUserInfo.firstName}! Brett here. How can I help you today?`
-            : `Hi ${cwUserInfo.firstName}! I'm the Clausewell AI assistant. I can answer basic questions about our services. For specific legal matters, I'll connect you with Brett directly.`;
-        
-        cwAddMessage('bot', welcomeMsg);
-        cwLastMessageCount = 1; // Welcome message counts as first message
-    }
+    // Show chats list, hide chat detail
+    document.getElementById('chatsSection').style.display = 'block';
+    document.getElementById('chatDetail').style.display = 'none';
     
-    function cwAddMessage(sender, text) {
-        const messagesDiv = document.getElementById('cw-chat-messages');
-        
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `cw-message ${sender}`;
-        
-        const avatar = document.createElement('div');
-        avatar.className = 'cw-message-avatar';
-        avatar.textContent = sender === 'bot' ? (cwIsLive ? '👤' : '🤖') : (sender === 'brett' ? '👤' : '👤');
-        
-        const bubble = document.createElement('div');
-        bubble.className = 'cw-message-bubble';
-        bubble.textContent = text;
-        
-        messageDiv.appendChild(avatar);
-        messageDiv.appendChild(bubble);
-        messagesDiv.appendChild(messageDiv);
-        
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
+    // Clear input
+    document.getElementById('replyInput').value = '';
     
-    function cwShowTyping() {
-        const messagesDiv = document.getElementById('cw-chat-messages');
-        const typingDiv = document.createElement('div');
-        typingDiv.className = 'cw-message bot';
-        typingDiv.innerHTML = `
-            <div class="cw-message-avatar">${cwIsLive ? '👤' : '🤖'}</div>
-            <div class="cw-typing-indicator active">
-                <span></span><span></span><span></span>
-            </div>
-        `;
-        typingDiv.id = 'cw-typing-indicator';
-        messagesDiv.appendChild(typingDiv);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
+    // Stop refreshing conversation, start refreshing list
+    clearInterval(chatsRefreshInterval);
+    loadChats();
+    chatsRefreshInterval = setInterval(loadChats, 5000);
+}
+
+async function sendReply(event) {
+    event.preventDefault();
     
-    function cwHideTyping() {
-        const typing = document.getElementById('cw-typing-indicator');
-        if (typing) typing.remove();
-    }
+    const input = document.getElementById('replyInput');
+    const message = input.value.trim();
     
-    async function cwSendMessage(event) {
-        event.preventDefault();
+    if (!message) return;
+    
+    const button = event.target.querySelector('.send-button');
+    button.disabled = true;
+    button.textContent = 'Sending...';
+    
+    try {
+        const response = await fetch(SEND_REPLY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                conversationId: currentChatId,
+                reply: message
+            })
+        });
         
-        if (!cwChatStarted || !cwUserInfo) {
-            return;
+        if (!response.ok) {
+            throw new Error('Failed to send reply');
         }
         
-        const input = document.getElementById('cw-chat-input');
-        const message = input.value.trim();
-        
-        if (!message) return;
-        
-        cwAddMessage('user', message);
+        // Clear input
         input.value = '';
         
-        const sendButton = document.getElementById('cw-chat-send');
-        sendButton.disabled = true;
-        input.disabled = true;
+        // Refresh messages
+        await loadChatMessages(currentChatId);
         
-        cwShowTyping();
-        
-        try {
-            // Check current status RIGHT BEFORE sending message
-            await cwCheckChatStatus();
-            
-            // Now send message with current isLive value
-            const response = await fetch(CW_SEND_MESSAGE_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: message,
-                    conversationId: cwConversationId,
-                    isLive: cwIsLive,
-                    firstName: cwUserInfo.firstName,
-                    lastName: cwUserInfo.lastName,
-                    email: cwUserInfo.email,
-                    phone: cwUserInfo.phone
-                })
-            });
-            
-            const data = await response.json();
-            
-            cwHideTyping();
-            cwAddMessage('bot', data.reply);
-            cwLastMessageCount += 2; // User message + bot reply
-            
-        } catch (error) {
-            console.error('Error sending message:', error);
-            cwHideTyping();
-            cwAddMessage('bot', 'Sorry, there was an error. Please try again or email brett@clausewell.com');
-        } finally {
-            sendButton.disabled = false;
-            input.disabled = false;
-            input.focus();
-        }
+    } catch (error) {
+        console.error('Error sending reply:', error);
+        alert('Failed to send reply. Please try again.');
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Send Reply';
+        input.focus();
     }
-    
-    // Polling functions for live replies
-    function cwStartPolling() {
-        if (cwPollingInterval) return; // Already polling
-        
-        cwPollingInterval = setInterval(cwCheckForNewMessages, 3000); // Check every 3 seconds
-    }
-    
-    function cwStopPolling() {
-        if (cwPollingInterval) {
-            clearInterval(cwPollingInterval);
-            cwPollingInterval = null;
-        }
-    }
-    
-    async function cwCheckForNewMessages() {
-        if (!cwChatStarted || !cwIsLive) return;
-        
-        try {
-            const response = await fetch(CW_GET_CHATS_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    conversationId: cwConversationId 
-                })
-            });
-            
-            if (!response.ok) return;
-            
-            const data = await response.json();
-            
-            // Check if there are new messages
-            if (data.messages && data.messages.length > cwLastMessageCount) {
-                // Get only the new messages
-                const newMessages = data.messages.slice(cwLastMessageCount);
-                
-                // Add new messages to chat
-                newMessages.forEach(msg => {
-                    if (msg.sender === 'brett') {
-                        cwAddMessage('brett', msg.text);
-                    }
-                });
-                
-                cwLastMessageCount = data.messages.length;
-            }
-            
-        } catch (error) {
-            console.error('Error checking for new messages:', error);
-        }
-    }
-    
-    // Check status every 60 seconds
-    setInterval(cwCheckChatStatus, 60000);
-</script>
+}
+
+function showError(message) {
+    const errorDiv = document.getElementById('error');
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+}
