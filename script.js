@@ -1,6 +1,6 @@
 <script>
     const CW_GET_STATUS_URL = 'https://default6bceeacf48244b408c6dfa6e15ddc6.d9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/1301363e02e34cc791d4e75ea400b36d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=iN2sh3VqqQDA4KVwtI6TpV0RXhk2_Y_9jSoIuXSMvWQ';
-    const CW_SEND_MESSAGE_URL = 'YOUR_HANDLE_MESSAGE_FLOW_URL_HERE';
+    const CW_SEND_MESSAGE_URL = 'https://default6bceeacf48244b408c6dfa6e15ddc6.d9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/aed4ddce5ddf4559a5497db276691a0f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=87e8kgVWhgNLRtVkiU2-YJvdHE6UkX0wPgANY8FZ8_Y';
     const CW_GET_CHATS_URL = 'https://default6bceeacf48244b408c6dfa6e15ddc6.d9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/2334eb9a0d1d4d2386d56277e107c33a/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=2SGpKNNezwf-U1wiEpNYNU2CQI1ggzJB6k0nZO0YiFo';
     
     let cwIsLive = false;
