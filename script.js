@@ -1,8 +1,8 @@
 // Power Automate Flow URLs
 const GET_STATUS_URL = 'https://default6bceeacf48244b408c6dfa6e15ddc6.d9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/1301363e02e34cc791d4e75ea400b36d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=iN2sh3VqqQDA4KVwtI6TpV0RXhk2_Y_9jSoIuXSMvWQ';
 const UPDATE_STATUS_URL = 'https://default6bceeacf48244b408c6dfa6e15ddc6.d9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/e51ca044361a45229ab5d339da70ace3/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=IV76u1Y_6fq2vI3NHm7vlvyVpEpz0qpEQbdePTHO9EM';
-const GET_CHATS_URL = 'YOUR_GET_CHATS_FLOW_URL_HERE'; // We'll create this
-const SEND_REPLY_URL = 'YOUR_SEND_REPLY_FLOW_URL_HERE'; // We'll create this
+const GET_CHATS_URL = 'https://default6bceeacf48244b408c6dfa6e15ddc6.d9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/2334eb9a0d1d4d2386d56277e107c33a/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=2SGpKNNezwf-U1wiEpNYNU2CQI1ggzJB6k0nZO0YiFo';
+const SEND_REPLY_URL = 'https://default6bceeacf48244b408c6dfa6e15ddc6.d9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9251f8b8ab2041a0906322115102a00a/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=sBx5ObDZIS-KFZRJkpfdlv0nBAAO2Fx0eGTNsbX4ARI';
 
 let currentStatus = null;
 let currentChatId = null;
