@@ -4,184 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clausewell Chatbot Admin</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
-            max-width: 500px;
-            width: 100%;
-        }
-        
-        h1 {
-            text-align: center;
-            color: #1f2937;
-            margin-bottom: 10px;
-            font-size: 32px;
-        }
-        
-        .subtitle {
-            text-align: center;
-            color: #6b7280;
-            margin-bottom: 40px;
-            font-size: 14px;
-        }
-        
-        .status-card {
-            border: 3px solid #e5e7eb;
-            border-radius: 16px;
-            padding: 40px 30px;
-            text-align: center;
-            transition: all 0.3s ease;
-            margin-bottom: 30px;
-        }
-        
-        .status-card.live {
-            border-color: #10b981;
-            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        }
-        
-        .status-card.ai {
-            border-color: #3b82f6;
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-        }
-        
-        .status-icon {
-            font-size: 72px;
-            margin-bottom: 20px;
-            animation: fadeIn 0.5s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.8); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        
-        .status-text {
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #1f2937;
-        }
-        
-        .status-description {
-            font-size: 16px;
-            color: #6b7280;
-            margin-bottom: 20px;
-        }
-        
-        .last-updated {
-            font-size: 13px;
-            color: #9ca3af;
-            margin-top: 15px;
-        }
-        
-        .toggle-button {
-            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-            color: white;
-            border: none;
-            padding: 18px 50px;
-            font-size: 18px;
-            font-weight: 600;
-            border-radius: 12px;
-            cursor: pointer;
-            width: 100%;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
-        }
-        
-        .toggle-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
-        }
-        
-        .toggle-button:active {
-            transform: translateY(0);
-        }
-        
-        .toggle-button:disabled {
-            background: #d1d5db;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-        }
-        
-        .spinner {
-            border: 4px solid #f3f4f6;
-            border-top: 4px solid #6366f1;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .error {
-            background: #fee2e2;
-            border: 2px solid #ef4444;
-            color: #991b1b;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            font-size: 14px;
-        }
-        
-        @media (max-width: 480px) {
-            .container {
-                padding: 30px 20px;
-            }
-            
-            h1 {
-                font-size: 24px;
-            }
-            
-            .status-icon {
-                font-size: 60px;
-            }
-            
-            .status-text {
-                font-size: 22px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <h1>Chatbot Admin</h1>
         <p class="subtitle">Clausewell Website Chat Control</p>
         
+        <!-- Status Toggle Section -->
         <div id="loading" class="loading">
             <div class="spinner"></div>
             <p>Loading current status...</p>
         </div>
         
-        <div id="content" style="display: none;">
+        <div id="statusSection" style="display: none;">
             <div class="status-card" id="statusCard">
                 <div class="status-icon" id="statusIcon">⏳</div>
                 <div class="status-text" id="statusText">Loading...</div>
@@ -195,125 +31,46 @@
             
             <div id="error" class="error" style="display: none;"></div>
         </div>
+
+        <!-- Divider -->
+        <div class="divider"></div>
+
+        <!-- Active Chats Section -->
+        <div id="chatsSection">
+            <h2>Active Chats</h2>
+            <div id="chatsList" class="chats-list">
+                <p class="no-chats">No active chats</p>
+            </div>
+        </div>
+
+        <!-- Chat Detail View -->
+        <div id="chatDetail" class="chat-detail" style="display: none;">
+            <div class="chat-detail-header">
+                <button class="back-button" onclick="closeChatDetail()">← Back</button>
+                <div class="chat-detail-info">
+                    <h3 id="chatDetailName"></h3>
+                    <p id="chatDetailContact"></p>
+                </div>
+            </div>
+
+            <div id="chatMessages" class="chat-messages">
+                <!-- Messages will be loaded here -->
+            </div>
+
+            <div class="chat-reply-area">
+                <form id="replyForm" onsubmit="sendReply(event)">
+                    <textarea 
+                        id="replyInput" 
+                        placeholder="Type your response..."
+                        rows="3"
+                        required
+                    ></textarea>
+                    <button type="submit" class="send-button">Send Reply</button>
+                </form>
+            </div>
+        </div>
     </div>
 
-    <script>
-        // REPLACE THESE WITH YOUR ACTUAL POWER AUTOMATE FLOW URLS
-        const GET_STATUS_URL = 'https://default6bceeacf48244b408c6dfa6e15ddc6.d9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/1301363e02e34cc791d4e75ea400b36d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=iN2sh3VqqQDA4KVwtI6TpV0RXhk2_Y_9jSoIuXSMvWQ';
-        const UPDATE_STATUS_URL = 'https://default6bceeacf48244b408c6dfa6e15ddc6.d9.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/e51ca044361a45229ab5d339da70ace3/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=IV76u1Y_6fq2vI3NHm7vlvyVpEpz0qpEQbdePTHO9EM';
-        
-        let currentStatus = null;
-        
-        // Check status when page loads
-        window.addEventListener('DOMContentLoaded', () => {
-            checkStatus();
-        });
-        
-        async function checkStatus() {
-            try {
-                const response = await fetch(GET_STATUS_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ checkStatus: true })
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to fetch status');
-                }
-                
-                const data = await response.json();
-                currentStatus = data.isLive;
-                
-                updateUI(data.isLive, data.lastUpdated);
-                
-                // Hide loading, show content
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('content').style.display = 'block';
-                
-            } catch (error) {
-                console.error('Error:', error);
-                showError('Failed to load status. Please check your internet connection and try again.');
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('content').style.display = 'block';
-            }
-        }
-        
-        function updateUI(isLive, lastUpdated) {
-            const card = document.getElementById('statusCard');
-            const icon = document.getElementById('statusIcon');
-            const text = document.getElementById('statusText');
-            const description = document.getElementById('statusDescription');
-            const updated = document.getElementById('lastUpdated');
-            
-            if (isLive) {
-                card.className = 'status-card live';
-                icon.textContent = '🟢';
-                text.textContent = 'LIVE MODE';
-                description.textContent = 'You are responding to chats';
-            } else {
-                card.className = 'status-card ai';
-                icon.textContent = '🤖';
-                text.textContent = 'AI MODE';
-                description.textContent = 'AI assistant is handling chats';
-            }
-            
-            // Format the timestamp
-            const date = new Date(lastUpdated);
-            const options = { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric',
-                hour: 'numeric', 
-                minute: '2-digit',
-                timeZone: 'America/Los_Angeles',
-                timeZoneName: 'short'
-            };
-            updated.textContent = `Last updated: ${date.toLocaleString('en-US', options)}`;
-            
-            // Hide any previous errors
-            document.getElementById('error').style.display = 'none';
-        }
-        
-        async function toggleStatus() {
-            const button = document.getElementById('toggleButton');
-            button.disabled = true;
-            button.textContent = 'Switching...';
-            
-            try {
-                const newStatus = !currentStatus;
-                
-                const response = await fetch(UPDATE_STATUS_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ setLive: newStatus })
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to update status');
-                }
-                
-                const data = await response.json();
-                
-                // Refresh the display
-                await checkStatus();
-                
-            } catch (error) {
-                console.error('Error:', error);
-                showError('Failed to switch mode. Please try again.');
-            } finally {
-                button.disabled = false;
-                button.textContent = 'Switch Mode';
-            }
-        }
-        
-        function showError(message) {
-            const errorDiv = document.getElementById('error');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-        }
-        
-        // Auto-refresh status every 30 seconds
-        setInterval(checkStatus, 30000);
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
